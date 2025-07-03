@@ -39,7 +39,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // Load points.csv using PapaParse
-Papa.parse('points.csv', {
+Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
   skipEmptyLines: true,
