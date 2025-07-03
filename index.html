@@ -31,33 +31,34 @@
 
 <script>
 let csvData = [];
-let map, markers = [];
+let map = L.map('map').setView([14.6188, 121.0829], 16);
+let markers = [];
 
-map = L.map('map').setView([14.6188, 121.0829], 16);
+// Load the map layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load points.csv with cache busting
+// Load CSV with cache-busting
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
   skipEmptyLines: true,
   complete: function(results) {
-    console.log("Parsed CSV:", results.data); // Debug log
+    console.log("Parsed CSV:", results.data);
     csvData = results.data.map(row => [
       row.Name,
       row.Type,
       parseFloat(row.Latitude),
       parseFloat(row.Longitude)
     ]);
-    findNearby(); // Run after data loads
+    findNearby(); // Auto-run once CSV loads
   }
 });
 
-// Haversine distance formula
+// Haversine formula to calculate distance in km
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radius of Earth in km
+  const R = 6371;
   const toRad = x => x * Math.PI / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
@@ -68,16 +69,16 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Main function to find nearby coordinates
+// Plot nearby coordinates
 function findNearby() {
   const userLat = parseFloat(document.getElementById('userLat').value);
   const userLng = parseFloat(document.getElementById('userLng').value);
 
-  // Remove old markers
+  // Clear old markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user marker
+  // Add user location marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -86,11 +87,16 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Add markers from CSV within 0.5 km
+  // Check and display nearby points
   csvData.forEach(([name, type, lat, lng]) => {
-    if (isNaN(lat) || isNaN(lng)) return;
+    if (isNaN(lat) || isNaN(lng)) {
+      console.warn(`Skipping invalid coordinate: ${name}`);
+      return;
+    }
     const dist = haversine(userLat, userLng, lat, lng);
+    console.log(`Checking ${name}: ${dist.toFixed(3)} km`);
     if (dist <= 0.5) {
+      console.log(`✅ Adding marker for ${name}`);
       const marker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>${name}</strong><br>${type}<br>${dist.toFixed(3)} km<br>
           <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
