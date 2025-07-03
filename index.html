@@ -61,8 +61,8 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
   complete: function(results) {
     console.log("Parsed CSV:", results.data);
     csvData = results.data.map(row => [
-      row.Name,
-      row.Type,
+      row.Node,         // ← updated from "Name"
+      row.City,         // ← updated from "Type"
       parseFloat(row.Latitude),
       parseFloat(row.Longitude)
     ]);
@@ -128,14 +128,14 @@ function findNearby() {
   map.setView([userLat, userLng], 16);
 
   // Plot nearby points
-  csvData.forEach(([name, type, lat, lng]) => {
+  csvData.forEach(([name, city, lat, lng]) => {
     if (isNaN(lat) || isNaN(lng)) return;
     const dist = haversine(userLat, userLng, lat, lng);
     console.log(`Checking ${name}: ${dist.toFixed(3)} km`);
     if (dist <= 0.5) {
       console.log(`✅ Adding marker for ${name}`);
       const marker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>${name}</strong><br>${type}<br>${dist.toFixed(3)} km<br>
+        .bindPopup(`<strong>${name}</strong><br>${city}<br>${dist.toFixed(3)} km<br>
         <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
       markers.push(marker);
     }
