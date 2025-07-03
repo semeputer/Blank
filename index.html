@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +15,7 @@
 </head>  
 <body>
 
-<h2>Nearby Coordinate Finder</h2>
+<h2>Nearby Coordinate Finder (from CSV)</h2>
 
 <div id="inputArea">
   <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188"></label>
@@ -26,24 +25,36 @@
 
 <div id="map"></div>
 
+<!-- Leaflet and PapaParse scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 <script>
+let csvData = [];
+let map, markers = [];
 
-// Coordinate data (Name, Type, Latitude, Longitude)
-const data = [
-  ["Point A", "Site", 14.6184, 121.0832],
-  ["Point B", "Site", 14.6190, 121.0825],
-  ["Point C", "Checkpoint", 14.6150, 121.0850],
-  ["Point D", "Site", 14.6105, 121.0900]
-];
-
-const map = L.map('map').setView([14.6188, 121.0829], 16);
+map = L.map('map').setView([14.6188, 121.0829], 16);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-let markers = [];
+// Load points.csv using PapaParse
+Papa.parse('points.csv', {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    csvData = results.data.map(row => [
+      row.Name,
+      row.Type,
+      parseFloat(row.Latitude),
+      parseFloat(row.Longitude)
+    ]);
+    findNearby(); // auto-run after CSV loads
+  }
+});
 
+// Haversine distance formula
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371; // km
   const toRad = x => x * Math.PI / 180;
@@ -56,23 +67,27 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Main function to find nearby coordinates
 function findNearby() {
   const userLat = parseFloat(document.getElementById('userLat').value);
   const userLng = parseFloat(document.getElementById('userLng').value);
 
-  // Clear old markers
+  // Remove old markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user location marker
+  // Add user marker
   const userMarker = L.circleMarker([userLat, userLng], {
-    radius: 6, color: 'blue', fillOpacity: 1
+    radius: 6,
+    color: 'blue',
+    fillOpacity: 1
   }).addTo(map).bindPopup("You are here");
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Plot nearby points
-  data.forEach(([name, type, lat, lng]) => {
+  // Add nearby CSV markers
+  csvData.forEach(([name, type, lat, lng]) => {
+    if (isNaN(lat) || isNaN(lng)) return;
     const dist = haversine(userLat, userLng, lat, lng);
     if (dist <= 0.5) {
       const marker = L.marker([lat, lng]).addTo(map)
@@ -82,8 +97,7 @@ function findNearby() {
     }
   });
 }
-
-findNearby(); // Initial load
 </script>
+
 </body>
 </html>
