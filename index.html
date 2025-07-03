@@ -8,7 +8,7 @@
     #map { height: 600px; width: 100%; }
     #inputArea { margin-bottom: 10px; }
     body { font-family: Arial, sans-serif; padding: 10px; }
-    input { margin-right: 5px; padding: 5px; }
+    input, select { margin-right: 5px; padding: 5px; }
     button { padding: 5px 10px; }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -18,8 +18,23 @@
 <h2>Nearby Coordinate Finder (from CSV)</h2>
 
 <div id="inputArea">
-  <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188"></label>
-  <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829"></label>
+  <label>
+    Coordinate Input:
+    <select id="coordMode" onchange="toggleCoordInput()">
+      <option value="separate">Separate Lat & Lng</option>
+      <option value="combined">Single Coordinate (Lat,Lng)</option>
+    </select>
+  </label>
+
+  <span id="separateInputs">
+    <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188"></label>
+    <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829"></label>
+  </span>
+
+  <span id="combinedInput" style="display:none;">
+    <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829"></label>
+  </span>
+
   <button onclick="findNearby()">Find Nearby (500m)</button>
 </div>
 
@@ -34,7 +49,6 @@ let csvData = [];
 let map = L.map('map').setView([14.6188, 121.0829], 16);
 let markers = [];
 
-// Load the map layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
@@ -52,11 +66,18 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
       parseFloat(row.Latitude),
       parseFloat(row.Longitude)
     ]);
-    findNearby(); // Auto-run once CSV loads
+    findNearby(); // Auto-run once loaded
   }
 });
 
-// Haversine formula to calculate distance in km
+// Toggle input visibility
+function toggleCoordInput() {
+  const mode = document.getElementById("coordMode").value;
+  document.getElementById("separateInputs").style.display = mode === "separate" ? "inline" : "none";
+  document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
+}
+
+// Distance formula
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -69,16 +90,35 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Plot nearby coordinates
+// Main function
 function findNearby() {
-  const userLat = parseFloat(document.getElementById('userLat').value);
-  const userLng = parseFloat(document.getElementById('userLng').value);
+  const mode = document.getElementById("coordMode").value;
+  let userLat, userLng;
 
-  // Clear old markers
+  if (mode === "separate") {
+    userLat = parseFloat(document.getElementById("userLat").value);
+    userLng = parseFloat(document.getElementById("userLng").value);
+  } else {
+    const coordText = document.getElementById("userCoord").value.trim();
+    const parts = coordText.split(",");
+    if (parts.length !== 2) {
+      alert("Please enter coordinates in the format: lat,lng");
+      return;
+    }
+    userLat = parseFloat(parts[0]);
+    userLng = parseFloat(parts[1]);
+  }
+
+  if (isNaN(userLat) || isNaN(userLng)) {
+    alert("Invalid coordinates.");
+    return;
+  }
+
+  // Remove previous markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user location marker
+  // Add user marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -87,19 +127,16 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Check and display nearby points
+  // Plot nearby points
   csvData.forEach(([name, type, lat, lng]) => {
-    if (isNaN(lat) || isNaN(lng)) {
-      console.warn(`Skipping invalid coordinate: ${name}`);
-      return;
-    }
+    if (isNaN(lat) || isNaN(lng)) return;
     const dist = haversine(userLat, userLng, lat, lng);
     console.log(`Checking ${name}: ${dist.toFixed(3)} km`);
     if (dist <= 0.5) {
       console.log(`✅ Adding marker for ${name}`);
       const marker = L.marker([lat, lng]).addTo(map)
         .bindPopup(`<strong>${name}</strong><br>${type}<br>${dist.toFixed(3)} km<br>
-          <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
+        <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
       markers.push(marker);
     }
   });
