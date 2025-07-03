@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nearby Coordinates Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #map { height: 600px; width: 100%; }
+    #inputArea { margin-bottom: 10px; }
+    body { font-family: Arial, sans-serif; padding: 10px; }
+    input { margin-right: 5px; padding: 5px; }
+    button { padding: 5px 10px; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+
+<h2>Nearby Coordinate Finder</h2>
+
+<div id="inputArea">
+  <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188"></label>
+  <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829"></label>
+  <button onclick="findNearby()">Find Nearby (500m)</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+
+// Coordinate data (Name, Type, Latitude, Longitude)
+const data = [
+  ["Point A", "Site", 14.6184, 121.0832],
+  ["Point B", "Site", 14.6190, 121.0825],
+  ["Point C", "Checkpoint", 14.6150, 121.0850],
+  ["Point D", "Site", 14.6105, 121.0900]
+];
+
+const map = L.map('map').setView([14.6188, 121.0829], 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+let markers = [];
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function findNearby() {
+  const userLat = parseFloat(document.getElementById('userLat').value);
+  const userLng = parseFloat(document.getElementById('userLng').value);
+
+  // Clear old markers
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  // Add user location marker
+  const userMarker = L.circleMarker([userLat, userLng], {
+    radius: 6, color: 'blue', fillOpacity: 1
+  }).addTo(map).bindPopup("You are here");
+  markers.push(userMarker);
+  map.setView([userLat, userLng], 16);
+
+  // Plot nearby points
+  data.forEach(([name, type, lat, lng]) => {
+    const dist = haversine(userLat, userLng, lat, lng);
+    if (dist <= 0.5) {
+      const marker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<strong>${name}</strong><br>${type}<br>${dist.toFixed(3)} km<br>
+          <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
+      markers.push(marker);
+    }
+  });
+}
+
+findNearby(); // Initial load
+</script>
+</body>
+</html>
