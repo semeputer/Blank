@@ -14,23 +14,28 @@
     function login() {
       const u = document.getElementById("user").value;
       const p = document.getElementById("pass").value;
-
+    
       if (u === "admin" && p === "1234") {
         localStorage.setItem("loggedIn", "true");
-
-        // Dynamically load the data file
+    
+        // Optional: Load the z_data88.js if you want to pre-load data
         const script = document.createElement("script");
         script.src = "z_data88.js";
         script.onload = () => {
           const decoded = atob(encodedData);
           console.log("Decoded CSV:", decoded);
-          // Here you can render it into a table or map
+          // Then redirect after loading if needed
+          window.location.href = "index.html";
         };
         document.body.appendChild(script);
+    
+        // Or just redirect directly if you don't need to load anything before that
+        // window.location.href = "index.html";
       } else {
         alert("Invalid credentials");
       }
     }
+
   </script>
 </body>
 </html>
