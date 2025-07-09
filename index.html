@@ -375,6 +375,27 @@ function findNearby() {
 // Theme toggle logic (UI only, not the map)
 document.getElementById("themeToggle").addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
+
+  const isDarkMode = document.body.classList.contains("dark-mode");
+  const sidebar = document.getElementById("sidebar");
+  const coordBox = document.getElementById("coordBox");
+
+  if (isDarkMode) {
+    sidebar.style.background = "#1e1e1e";
+    sidebar.style.color = "#fff";
+    coordBox.style.background = "#333";
+    coordBox.style.color = "#fff";
+
+    document.getElementById("toggleBtn").style.color = "#fff"; // ← Add this line
+  } else {
+    sidebar.style.background = "#fff";
+    sidebar.style.color = "#000";
+    coordBox.style.background = "#fff";
+    coordBox.style.color = "#000";
+
+    document.getElementById("toggleBtn").style.color = "#000"; // ← Add this line
+  }
+});
 });
 </script>
 </body>
