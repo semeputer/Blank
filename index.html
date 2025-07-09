@@ -53,19 +53,23 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load CSV with cache-busting
+// Load CSV with extra fields
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
   skipEmptyLines: true,
   complete: function(results) {
     console.log("Parsed CSV:", results.data);
-    csvData = results.data.map(row => [
-      row.Node,         // Name or ID
-      row.City,         // Type or Description
-      parseFloat(row.Latitude),
-      parseFloat(row.Longitude)
-    ]);
+    csvData = results.data.map(row => ({
+      node: row.Node,
+      city: row.City,
+      lat: parseFloat(row.Latitude),
+      lng: parseFloat(row.Longitude),
+      equipped: row.Equipped,
+      working: row.Working,
+      available: row.Available,
+      utilization: row.Utilization
+    }));
     findNearby(); // Auto-run once loaded
   }
 });
@@ -77,7 +81,7 @@ function toggleCoordInput() {
   document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
 }
 
-// Distance formula (Haversine)
+// Haversine distance in km
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -90,7 +94,6 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Main logic
 function findNearby() {
   const mode = document.getElementById("coordMode").value;
   let userLat, userLng;
@@ -114,11 +117,11 @@ function findNearby() {
     return;
   }
 
-  // Clear old markers
+  // Clear previous markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user location as blue circle
+  // User marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -128,19 +131,28 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Add nearby points as red circles
-  csvData.forEach(([name, city, lat, lng]) => {
-    if (isNaN(lat) || isNaN(lng)) return;
-    const dist = haversine(userLat, userLng, lat, lng);
+  // Nearby points
+  csvData.forEach(point => {
+    if (isNaN(point.lat) || isNaN(point.lng)) return;
+
+    const dist = haversine(userLat, userLng, point.lat, point.lng);
     if (dist <= 0.5) {
-      const marker = L.circleMarker([lat, lng], {
+      const popupHtml = `
+        <strong>${point.node}</strong><br>
+        ${point.city}<br>
+        Equipped: ${point.equipped}<br>
+        Working: ${point.working}<br>
+        Available: ${point.available}<br>
+        Utilization: ${point.utilization}<br>
+        ${dist.toFixed(3)} km<br>
+        <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
+      `;
+      const marker = L.circleMarker([point.lat, point.lng], {
         radius: 6,
         color: 'red',
         fillColor: 'red',
         fillOpacity: 0.8
-      }).addTo(map)
-        .bindPopup(`<strong>${name}</strong><br>${city}<br>${dist.toFixed(3)} km<br>
-        <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
+      }).addTo(map).bindPopup(popupHtml);
       markers.push(marker);
     }
   });
