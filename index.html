@@ -142,30 +142,46 @@
       right: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       z-index: 1000;
     }
 
     #themeToggle {
-      background: rgba(255,255,255,0.9);
-      padding: 10px;
-      border-radius: 8px;
+      background: #fff;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-size: 18px;
     }
 
     .leaflet-control-locate {
       all: unset;
-      display: block;
-      background: rgba(255,255,255,0.9);
-      padding: 8px;
-      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 4px;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      width: 36px;
-      height: 36px;
-      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .leaflet-control-locate.active {
+      background-color: #4285f4;
+      color: white;
+    }
+
+    .leaflet-control-locate::before {
+      font-family: "Font Awesome 6 Free";
+      content: "\f124";
+      font-weight: 900;
+      font-size: 18px;
     }
 
     @media (max-width: 768px) {
@@ -243,6 +259,7 @@ const geoControl = L.control.locate({
   keepCurrentZoomLevel: true,
   drawCircle: true,
   showPopup: false,
+  icon: 'fa-solid fa-location-crosshairs',
   strings: {
     title: "Show my location"
   },
@@ -251,7 +268,6 @@ const geoControl = L.control.locate({
   }
 });
 geoControl.addTo(map);
-
 const geoControlContainer = geoControl.getContainer();
 document.getElementById("geoControl").appendChild(geoControlContainer);
 
