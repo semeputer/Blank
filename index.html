@@ -61,8 +61,8 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
   complete: function(results) {
     console.log("Parsed CSV:", results.data);
     csvData = results.data.map(row => [
-      row.Node,         // ← updated from "Name"
-      row.City,         // ← updated from "Type"
+      row.Node,         // Name or ID
+      row.City,         // Type or Description
       parseFloat(row.Latitude),
       parseFloat(row.Longitude)
     ]);
@@ -77,7 +77,7 @@ function toggleCoordInput() {
   document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
 }
 
-// Distance formula
+// Distance formula (Haversine)
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -90,7 +90,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Main function
+// Main logic
 function findNearby() {
   const mode = document.getElementById("coordMode").value;
   let userLat, userLng;
@@ -114,26 +114,25 @@ function findNearby() {
     return;
   }
 
-  // Remove previous markers
+  // Clear old markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user marker
+  // Add user location as blue circle
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
+    fillColor: 'blue',
     fillOpacity: 1
   }).addTo(map).bindPopup("You are here");
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Plot nearby points
+  // Add nearby points as red circles
   csvData.forEach(([name, city, lat, lng]) => {
     if (isNaN(lat) || isNaN(lng)) return;
     const dist = haversine(userLat, userLng, lat, lng);
-    console.log(`Checking ${name}: ${dist.toFixed(3)} km`);
     if (dist <= 0.5) {
-      console.log(`✅ Adding marker for ${name}`);
       const marker = L.circleMarker([lat, lng], {
         radius: 6,
         color: 'red',
