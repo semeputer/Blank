@@ -134,7 +134,12 @@ function findNearby() {
     console.log(`Checking ${name}: ${dist.toFixed(3)} km`);
     if (dist <= 0.5) {
       console.log(`✅ Adding marker for ${name}`);
-      const marker = L.marker([lat, lng]).addTo(map)
+      const marker = L.circleMarker([lat, lng], {
+        radius: 6,
+        color: 'red',
+        fillColor: 'red',
+        fillOpacity: 0.8
+      }).addTo(map)
         .bindPopup(`<strong>${name}</strong><br>${city}<br>${dist.toFixed(3)} km<br>
         <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${lat},${lng}" target="_blank">Get Directions</a>`);
       markers.push(marker);
