@@ -11,31 +11,17 @@
   <button onclick="login()">Login</button>
 
   <script>
-    function login() {
-      const u = document.getElementById("user").value;
-      const p = document.getElementById("pass").value;
-    
-      if (u === "admin" && p === "1234") {
-        localStorage.setItem("loggedIn", "true");
-    
-        // Optional: Load the z_data88.js if you want to pre-load data
-        const script = document.createElement("script");
-        script.src = "z_data88.js";
-        script.onload = () => {
-          const decoded = atob(encodedData);
-          console.log("Decoded CSV:", decoded);
-          // Then redirect after loading if needed
-          window.location.href = "index.html";
-        };
-        document.body.appendChild(script);
-    
-        // Or just redirect directly if you don't need to load anything before that
-        // window.location.href = "index.html";
-      } else {
-        alert("Invalid credentials");
-      }
-    }
+  function login() {
+    const u = document.getElementById("user").value;
+    const p = document.getElementById("pass").value;
 
+    if (u === "admin" && p === "1234") {
+      localStorage.setItem("loggedIn", "true");
+      window.location.href = "index.html";
+    } else {
+      alert("Invalid credentials");
+    }
+  }
   </script>
 </body>
 </html>
