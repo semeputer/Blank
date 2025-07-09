@@ -7,7 +7,7 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- FontAwesome for icons -->
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -69,7 +69,7 @@
       position: relative;
     }
 
-    /* Coordinate input outside sidebar */
+    /* Coordinate box */
     #coordBox {
       position: absolute;
       top: 20px;
@@ -81,19 +81,42 @@
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
+    #coordBox select,
     #coordBox input {
       padding: 6px 8px;
       font-size: 14px;
-      width: 150px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
 
+    #coordBox select {
+      width: 120px;
+    }
+
+    #coordBox input {
+      width: 160px;
+    }
+
     .coord-icon {
       color: #555;
+    }
+
+    /* Collapsible Util Filter */
+    .util-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .util-options {
+      margin-top: 10px;
+    }
+
+    .util-options.hidden {
+      display: none;
     }
 
     @media (max-width: 768px) {
@@ -107,10 +130,8 @@
       #coordBox {
         top: 10px;
         left: 10px;
-      }
-
-      #sidebar.collapsed {
-        width: 60px;
+        flex-wrap: wrap;
+        gap: 6px;
       }
     }
   </style>
@@ -126,25 +147,35 @@
 
     <div class="sidebar-content">
       <div class="filter-group">
-        <label><strong>Utilization Filter</strong></label>
-        <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label>
-        <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label>
-        <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
+        <div class="util-header">
+          <label><strong>Utilization</strong></label>
+          <button onclick="toggleUtil()" style="font-size: 12px;">Toggle</button>
+        </div>
+        <div class="util-options" id="utilOptions">
+          <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label>
+          <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label>
+          <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Map -->
   <div id="map">
-    <!-- Coordinate Input Box -->
+    <!-- Coordinate Input -->
     <div id="coordBox">
-      <i class="fas fa-map-marker-alt coord-icon"></i>
+      <select id="coordType">
+        <option value="coordinates" selected>Coordinates</option>
+        <option value="facility">Facility</option>
+        <option value="city">City</option>
+        <option value="barangay">Barangay</option>
+      </select>
       <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
     </div>
   </div>
 </div>
 
-<!-- Scripts -->
+<!-- JS Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -157,7 +188,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load CSV data
+// Load CSV
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
@@ -198,13 +229,15 @@ function getColor(util) {
 }
 
 function findNearby() {
-  const coordText = document.getElementById("userCoord").value.trim();
-  const parts = coordText.split(",");
+  const type = document.getElementById("coordType").value;
+  const input = document.getElementById("userCoord").value.trim();
+  if (type !== "coordinates") return; // Only coordinate-based filtering supported now
+
+  const parts = input.split(",");
   if (parts.length !== 2) return;
 
   const userLat = parseFloat(parts[0]);
   const userLng = parseFloat(parts[1]);
-
   if (isNaN(userLat) || isNaN(userLng)) return;
 
   const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
@@ -254,7 +287,12 @@ document.getElementById("toggleBtn").addEventListener("click", () => {
   document.getElementById("sidebar").classList.toggle("collapsed");
 });
 
-// Auto-refresh on filter change
+// Util filter toggle
+function toggleUtil() {
+  document.getElementById("utilOptions").classList.toggle("hidden");
+}
+
+// Auto-refresh on checkbox change
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
