@@ -7,7 +7,7 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- FontAwesome -->
+  <!-- FontAwesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -34,6 +34,7 @@
       transition: width 0.3s ease;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     #sidebar.collapsed {
@@ -50,11 +51,13 @@
       border: none;
       font-size: 20px;
       cursor: pointer;
-      align-self: flex-start;
+      position: absolute;
+      top: 15px;
+      right: 15px;
     }
 
     .filter-group {
-      margin-top: 20px;
+      margin-top: 60px;
     }
 
     .filter-group label {
@@ -69,7 +72,7 @@
       position: relative;
     }
 
-    /* Coordinate box */
+    /* Coordinate Input Box */
     #coordBox {
       position: absolute;
       top: 20px;
@@ -104,19 +107,28 @@
       color: #555;
     }
 
-    /* Collapsible Util Filter */
-    .util-header {
+    /* Modern arrow toggle */
+    .util-toggle {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .util-options {
-      margin-top: 10px;
+    .util-toggle span {
+      font-size: 14px;
+      font-weight: bold;
     }
 
     .util-options.hidden {
       display: none;
+    }
+
+    /* Space from leaflet controls */
+    .leaflet-control-zoom {
+      margin-top: 80px !important;
+      margin-left: 20px !important;
     }
 
     @media (max-width: 768px) {
@@ -147,9 +159,8 @@
 
     <div class="sidebar-content">
       <div class="filter-group">
-        <div class="util-header">
-          <label><strong>Utilization</strong></label>
-          <button onclick="toggleUtil()" style="font-size: 12px;">Toggle</button>
+        <div class="util-toggle" onclick="toggleUtil()">
+          <span><i id="utilArrow" class="fas fa-chevron-down"></i> Utilization</span>
         </div>
         <div class="util-options" id="utilOptions">
           <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label>
@@ -231,7 +242,7 @@ function getColor(util) {
 function findNearby() {
   const type = document.getElementById("coordType").value;
   const input = document.getElementById("userCoord").value.trim();
-  if (type !== "coordinates") return; // Only coordinate-based filtering supported now
+  if (type !== "coordinates") return;
 
   const parts = input.split(",");
   if (parts.length !== 2) return;
@@ -287,12 +298,16 @@ document.getElementById("toggleBtn").addEventListener("click", () => {
   document.getElementById("sidebar").classList.toggle("collapsed");
 });
 
-// Util filter toggle
+// Util toggle
 function toggleUtil() {
-  document.getElementById("utilOptions").classList.toggle("hidden");
+  const options = document.getElementById("utilOptions");
+  const arrow = document.getElementById("utilArrow");
+  options.classList.toggle("hidden");
+  arrow.classList.toggle("fa-chevron-down");
+  arrow.classList.toggle("fa-chevron-up");
 }
 
-// Auto-refresh on checkbox change
+// Recalculate on filter change
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
