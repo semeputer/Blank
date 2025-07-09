@@ -4,46 +4,131 @@
   <title>Nearby Coordinates Map</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    #map { height: 600px; width: 100%; }
-    #inputArea { margin-bottom: 10px; }
-    body { font-family: Arial, sans-serif; padding: 10px; }
-    input, select { margin-right: 5px; padding: 5px; }
-    button { padding: 5px 10px; }
-    label.checkbox { margin-right: 10px; }
-  </style>
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #container {
+      display: flex;
+      height: 100%;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: 260px;
+      background: #f9f9f9;
+      border-right: 1px solid #ccc;
+      padding: 15px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    #sidebar h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    label.checkbox {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* Map */
+    #map-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Floating Coordinate Box */
+    #inputOverlay {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+
+    #inputOverlay label {
+      font-size: 14px;
+      display: block;
+      margin-top: 6px;
+    }
+
+    #inputOverlay select,
+    #inputOverlay input {
+      width: 100%;
+      margin-top: 4px;
+      padding: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    /* Make small screens scrollable */
+    @media (max-width: 768px) {
+      #container {
+        flex-direction: column;
+      }
+      #sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ccc;
+      }
+      #inputOverlay {
+        right: 5px;
+        left: 5px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<h2>Nearby Coordinate Finder (from CSV)</h2>
+<div id="container">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h2>Filter by Utilization</h2>
+    <label class="checkbox"><input type="checkbox" class="utilFilter" value="low" checked> 0%–50% (Green)</label>
+    <label class="checkbox"><input type="checkbox" class="utilFilter" value="mid" checked> 51%–74% (Yellow)</label>
+    <label class="checkbox"><input type="checkbox" class="utilFilter" value="high" checked> 75%–100% (Red)</label>
+  </div>
 
-<div id="inputArea">
-  <label>
-    Coordinate Input:
-    <select id="coordMode" onchange="toggleCoordInput()">
-      <option value="separate">Separate Lat & Lng</option>
-      <option value="combined">Single Coordinate (Lat,Lng)</option>
-    </select>
-  </label>
+  <!-- Map Container -->
+  <div id="map-container">
+    <div id="map"></div>
 
-  <span id="separateInputs">
-    <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188" onchange="findNearby()"></label>
-    <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829" onchange="findNearby()"></label>
-  </span>
+    <!-- Floating Coordinate Input -->
+    <div id="inputOverlay">
+      <label>
+        Coordinate Input:
+        <select id="coordMode" onchange="toggleCoordInput()">
+          <option value="separate">Separate Lat & Lng</option>
+          <option value="combined">Single Coordinate (Lat,Lng)</option>
+        </select>
+      </label>
 
-  <span id="combinedInput" style="display:none;">
-    <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829" oninput="findNearby()"></label>
-  </span>
+      <div id="separateInputs">
+        <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188" onchange="findNearby()"></label>
+        <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829" onchange="findNearby()"></label>
+      </div>
 
-  <br><br>
-  <strong>Filter by Utilization:</strong><br>
-  <label class="checkbox"><input type="checkbox" class="utilFilter" value="low" checked> 0%–50% (Green)</label>
-  <label class="checkbox"><input type="checkbox" class="utilFilter" value="mid" checked> 51%–74% (Yellow)</label>
-  <label class="checkbox"><input type="checkbox" class="utilFilter" value="high" checked> 75%–100% (Red)</label>
+      <div id="combinedInput" style="display:none;">
+        <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829" oninput="findNearby()"></label>
+      </div>
+    </div>
+  </div>
 </div>
-
-<div id="map"></div>
 
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -70,15 +155,15 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
       lng: parseFloat(row.Longitude),
       utilization: parseFloat(row.Utilization)
     }));
-    findNearby(); // Initial draw
+    findNearby();
   }
 });
 
 function toggleCoordInput() {
   const mode = document.getElementById("coordMode").value;
-  document.getElementById("separateInputs").style.display = mode === "separate" ? "inline" : "none";
-  document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
-  findNearby(); // Auto-trigger on mode switch
+  document.getElementById("separateInputs").style.display = mode === "separate" ? "block" : "none";
+  document.getElementById("combinedInput").style.display = mode === "combined" ? "block" : "none";
+  findNearby();
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -124,11 +209,11 @@ function findNearby() {
 
   const selectedFilters = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
 
-  // Clear existing
+  // Clear existing markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // User marker
+  // Add user marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -138,7 +223,7 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Points
+  // Add matching points
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
 
@@ -148,7 +233,7 @@ function findNearby() {
     if (dist <= 0.5 && selectedFilters.includes(utilCategory)) {
       const color = getColorByUtilization(point.utilization);
 
-      // Build popup excluding lat/lng
+      // Build popup content excluding lat/lng
       let popupHtml = `<strong>${point.Node || 'Unnamed'}</strong><br>`;
       for (const [key, value] of Object.entries(point)) {
         if (['lat', 'lng', 'Latitude', 'Longitude'].includes(key)) continue;
@@ -163,15 +248,16 @@ function findNearby() {
         fillColor: color,
         fillOpacity: 0.8
       }).addTo(map).bindPopup(popupHtml);
-
       markers.push(marker);
     }
   });
 }
 
-// Auto-update map when filters are changed
-document.querySelectorAll('.utilFilter').forEach(cb => {
-  cb.addEventListener('change', findNearby);
+// Auto-update on filter change
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('.utilFilter').forEach(cb => {
+    cb.addEventListener('change', findNearby);
+  });
 });
 </script>
 
