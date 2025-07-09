@@ -147,7 +147,7 @@
     #themeToggle {
       position: absolute;
       bottom: 66px;
-      right: 14px;
+      right: 13px;
       background: #fff;
       width: 34px;
       height: 34px;
@@ -332,7 +332,7 @@ function findNearby() {
         Equipped: ${point.Equipped || 'N/A'}<br>
         Working: ${point.Working || 'N/A'}<br>
         Available: ${point.Available || 'N/A'}<br>
-        Utilization: ${point.Utilization || 'N/A'}%<br>
+        Utilization: ${parseFloat(point.Utilization).toFixed(0)}%<br>
         Distance: ${dist.toFixed(3)} km<br>
         <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
       `;
