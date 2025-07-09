@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nearby Coordinates Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <!-- Icons (for modern look) -->
+  <!-- FontAwesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -25,10 +24,10 @@
       overflow: hidden;
     }
 
-    /* Sidebar styles */
+    /* Sidebar */
     #sidebar {
       width: 280px;
-      background-color: #ffffff;
+      background-color: #fff;
       border-right: 1px solid #ddd;
       padding: 20px;
       box-sizing: border-box;
@@ -39,82 +38,79 @@
 
     #sidebar.collapsed {
       width: 60px;
+      padding: 20px 10px;
     }
 
-    #sidebar h2 {
-      font-size: 16px;
-      margin-bottom: 15px;
+    #sidebar.collapsed .sidebar-content {
+      display: none;
     }
 
     #toggleBtn {
       background: none;
       border: none;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
-      margin-bottom: 15px;
-      align-self: flex-end;
-    }
-
-    .hidden-label {
-      display: none;
-    }
-
-    #sidebar.collapsed .hidden-label {
-      display: inline-block;
-    }
-
-    #sidebar.collapsed .label-text {
-      display: none;
+      align-self: flex-start;
     }
 
     .filter-group {
-      margin-bottom: 15px;
+      margin-top: 20px;
     }
 
-    .filter-group input {
-      margin-right: 6px;
-    }
-
-    #coordInput {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #coordInput input {
-      flex: 1;
-      padding: 6px 8px;
+    .filter-group label {
+      display: block;
+      margin-bottom: 6px;
       font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
     }
 
     #map {
       flex: 1;
       height: 100%;
-      transition: margin-left 0.3s ease;
+      position: relative;
     }
 
-    .collapsed + #map {
-      margin-left: 60px;
+    /* Coordinate input outside sidebar */
+    #coordBox {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #coordBox input {
+      padding: 6px 8px;
+      font-size: 14px;
+      width: 150px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
 
     .coord-icon {
-      color: #666;
-      font-size: 16px;
+      color: #555;
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
       #sidebar {
         position: absolute;
-        z-index: 1000;
+        z-index: 999;
         height: 100%;
-        background: white;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        background: #fff;
       }
-      #map {
-        margin-left: 0 !important;
+
+      #coordBox {
+        top: 10px;
+        left: 10px;
+      }
+
+      #sidebar.collapsed {
+        width: 60px;
       }
     }
   </style>
@@ -128,29 +124,27 @@
       <i class="fas fa-bars"></i>
     </button>
 
-    <div class="filter-group">
-      <label class="label-text"><strong>Coordinates</strong></label>
-      <label class="hidden-label" title="Coordinates"><i class="fas fa-location-crosshairs coord-icon"></i></label>
-      <div id="coordInput">
-        <i class="fas fa-map-marker-alt coord-icon"></i>
-        <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
+    <div class="sidebar-content">
+      <div class="filter-group">
+        <label><strong>Utilization Filter</strong></label>
+        <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label>
+        <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label>
+        <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
       </div>
-    </div>
-
-    <div class="filter-group">
-      <label class="label-text"><strong>Utilization Filter</strong></label>
-      <label class="hidden-label" title="Filter"><i class="fas fa-sliders-h coord-icon"></i></label>
-      <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label><br>
-      <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label><br>
-      <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
     </div>
   </div>
 
   <!-- Map -->
-  <div id="map"></div>
+  <div id="map">
+    <!-- Coordinate Input Box -->
+    <div id="coordBox">
+      <i class="fas fa-map-marker-alt coord-icon"></i>
+      <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
+    </div>
+  </div>
 </div>
 
-<!-- Leaflet + PapaParse -->
+<!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -163,7 +157,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load CSV
+// Load CSV data
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
@@ -179,7 +173,6 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
   }
 });
 
-// Util functions
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -205,8 +198,8 @@ function getColor(util) {
 }
 
 function findNearby() {
-  const coordInput = document.getElementById("userCoord").value.trim();
-  const parts = coordInput.split(",");
+  const coordText = document.getElementById("userCoord").value.trim();
+  const parts = coordText.split(",");
   if (parts.length !== 2) return;
 
   const userLat = parseFloat(parts[0]);
@@ -216,11 +209,9 @@ function findNearby() {
 
   const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
 
-  // Clear markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // User marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -230,7 +221,6 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Add nearby points
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
 
@@ -261,11 +251,10 @@ function findNearby() {
 
 // Sidebar toggle
 document.getElementById("toggleBtn").addEventListener("click", () => {
-  const sidebar = document.getElementById("sidebar");
-  sidebar.classList.toggle("collapsed");
+  document.getElementById("sidebar").classList.toggle("collapsed");
 });
 
-// Auto refresh on checkbox change
+// Auto-refresh on filter change
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
