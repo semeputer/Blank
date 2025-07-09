@@ -1,45 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="script/login.js" defer></script>
 </head>
 <body>
   <h2>Login</h2>
-  <input id="username" placeholder="Username"><br>
-  <input id="password" type="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
-  <p id="error" style="color:red;display:none;">Invalid login</p>
-
-  <script>
-    function getFingerprint() {
-      return {
-        userAgent: navigator.userAgent,
-        screenSize: `${screen.width}x${screen.height}`,
-        pixelRatio: window.devicePixelRatio,
-        isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
-        language: navigator.language,
-        timezone: new Date().getTimezoneOffset()
-      };
-    }
-
-    async function login() {
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: document.getElementById('username').value,
-          password: document.getElementById('password').value,
-          deviceFingerprint: getFingerprint()
-        })
-      });
-
-      if (res.ok) {
-        window.location.href = 'map.html';
-      } else {
-        document.getElementById('error').style.display = 'block';
-      }
-    }
-  </script>
+  <input type="text" id="username" placeholder="Username"><br />
+  <input type="password" id="password" placeholder="Password"><br />
+  <button onclick="attemptLogin()">Login</button>
+  <p id="error" style="color: red;"></p>
 </body>
 </html>
