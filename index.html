@@ -26,8 +26,7 @@
       width: 280px;
       background: #fff;
       border-right: 1px solid #ddd;
-      padding: 20px;
-      padding-top: 10px;
+      padding: 20px 20px 20px 20px;
       box-sizing: border-box;
       transition: width 0.3s ease;
       position: relative;
@@ -115,24 +114,20 @@
       bottom: 20px;
       left: 20px;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(4px);
-      padding: 10px;
+      padding: 6px;
       border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .custom-zoom button {
-      font-size: 16px;
-      padding: 4px 10px;
-      cursor: pointer;
-      background: #eee;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 36px;
+    .custom-zoom:hover {
+      opacity: 1;
     }
 
     .custom-zoom input[type=range] {
@@ -140,6 +135,7 @@
       -webkit-appearance: slider-vertical;
       width: 30px;
       height: 120px;
+      cursor: pointer;
     }
 
     @media (max-width: 768px) {
@@ -188,9 +184,7 @@
 
     <!-- Custom Zoom -->
     <div class="custom-zoom">
-      <button onclick="adjustZoom(1)">+</button>
       <input type="range" id="zoomSlider" min="1" max="20" step="1" />
-      <button onclick="adjustZoom(-1)">−</button>
     </div>
   </div>
 </div>
@@ -208,19 +202,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Zoom control sync
+// Zoom sync
 const zoomSlider = document.getElementById('zoomSlider');
 zoomSlider.value = map.getZoom();
 zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
 map.on('zoomend', () => zoomSlider.value = map.getZoom());
 
-function adjustZoom(delta) {
-  let newZoom = map.getZoom() + delta;
-  newZoom = Math.min(20, Math.max(1, newZoom));
-  map.setZoom(newZoom);
-}
-
-// Load CSV
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
@@ -285,7 +272,6 @@ function findNearby() {
   }).addTo(map).bindPopup("You are here");
   markers.push(userMarker);
 
-  // Zoom into the location smoothly
   map.setView([userLat, userLng], 18);
 
   csvData.forEach(point => {
@@ -325,6 +311,7 @@ function toggleUtil() {
 document.getElementById("toggleBtn").addEventListener("click", () => {
   document.getElementById("sidebar").classList.toggle("collapsed");
 });
+
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
