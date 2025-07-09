@@ -31,6 +31,7 @@
       box-sizing: border-box;
       transition: width 0.3s ease;
       position: relative;
+      color: #000;
     }
 
     #sidebar.collapsed {
@@ -50,6 +51,7 @@
       position: absolute;
       top: 15px;
       right: 15px;
+      color: #000;
     }
 
     .filter-group {
@@ -91,6 +93,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      color: #000;
     }
 
     #coordBox select, #coordBox input {
@@ -162,32 +165,19 @@
       z-index: 1001;
     }
 
-    .dark-mode #sidebar {
+    /* Dark mode styles */
+    body.dark-mode #sidebar {
       background: #1e1e1e;
-      color: #f0f0f0;
-      border-right: 1px solid #444;
+      color: #fff;
     }
 
-    .dark-mode #coordBox {
-      background: #2a2a2a;
-      color: #f0f0f0;
-      box-shadow: 0 0 8px rgba(255,255,255,0.05);
-    }
-
-    .dark-mode #coordBox input,
-    .dark-mode #coordBox select {
+    body.dark-mode #coordBox {
       background: #333;
-      color: #f0f0f0;
-      border: 1px solid #555;
+      color: #fff;
     }
 
-    .dark-mode .filter-group label {
-      color: #ddd;
-    }
-
-    .dark-mode #themeToggle {
-      background: #333;
-      color: #f0f0f0;
+    body.dark-mode #toggleBtn {
+      color: #fff;
     }
 
     @media (max-width: 768px) {
@@ -301,9 +291,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   const toRad = x => x * Math.PI / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -349,53 +337,29 @@ function findNearby() {
     const category = getUtilCategory(point.utilization);
     if (dist <= 0.5 && selected.includes(category)) {
       const color = getColor(point.utilization);
-      let popupHtml = `
-        <strong>${point.Node}</strong><br>
-        City: ${point.City || 'N/A'}<br>
-        Equipped: ${point.Equipped || 'N/A'}<br>
-        Working: ${point.Working || 'N/A'}<br>
-        Available: ${point.Available || 'N/A'}<br>
-        Utilization: ${parseFloat(point.Utilization).toFixed(0)}%<br>
-        Distance: ${dist.toFixed(3)} km<br>
+      const popupHtml = `
+        <strong>${point.Node || 'Unknown'}</strong><br>
+        City: ${point.City || '—'}<br>
+        Equipped: ${point.Equipped || '—'}<br>
+        Working: ${point.Working || '—'}<br>
+        Available: ${point.Available || '—'}<br>
+        Utilization: ${point.utilization.toFixed(0)}%<br>
+        ${dist.toFixed(3)} km<br>
         <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
       `;
-
       const marker = L.circleMarker([point.lat, point.lng], {
         radius: 6,
         color: color,
         fillColor: color,
         fillOpacity: 0.85
       }).addTo(map).bindPopup(popupHtml);
-
       markers.push(marker);
     }
   });
 }
 
-// Theme toggle logic (UI only, not the map)
 document.getElementById("themeToggle").addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
-
-  const isDarkMode = document.body.classList.contains("dark-mode");
-  const sidebar = document.getElementById("sidebar");
-  const coordBox = document.getElementById("coordBox");
-
-  if (isDarkMode) {
-    sidebar.style.background = "#1e1e1e";
-    sidebar.style.color = "#fff";
-    coordBox.style.background = "#333";
-    coordBox.style.color = "#fff";
-
-    document.getElementById("toggleBtn").style.color = "#fff"; // ← Add this line
-  } else {
-    sidebar.style.background = "#fff";
-    sidebar.style.color = "#000";
-    coordBox.style.background = "#fff";
-    coordBox.style.color = "#000";
-
-    document.getElementById("toggleBtn").style.color = "#000"; // ← Add this line
-  }
-});
 });
 </script>
 </body>
