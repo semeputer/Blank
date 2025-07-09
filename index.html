@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"/>
+
   <style>
     html, body {
       margin: 0;
@@ -147,7 +148,7 @@
     #themeToggle {
       position: absolute;
       bottom: 66px;
-      right: 13px;
+      right: 16px;
       background: #fff;
       width: 34px;
       height: 34px;
@@ -159,6 +160,34 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
       font-size: 16px;
       z-index: 1001;
+    }
+
+    .dark-mode #sidebar {
+      background: #1e1e1e;
+      color: #f0f0f0;
+      border-right: 1px solid #444;
+    }
+
+    .dark-mode #coordBox {
+      background: #2a2a2a;
+      color: #f0f0f0;
+      box-shadow: 0 0 8px rgba(255,255,255,0.05);
+    }
+
+    .dark-mode #coordBox input,
+    .dark-mode #coordBox select {
+      background: #333;
+      color: #f0f0f0;
+      border: 1px solid #555;
+    }
+
+    .dark-mode .filter-group label {
+      color: #ddd;
+    }
+
+    .dark-mode #themeToggle {
+      background: #333;
+      color: #f0f0f0;
     }
 
     @media (max-width: 768px) {
@@ -216,9 +245,8 @@ let csvData = [];
 let map = L.map('map', { zoomControl: false }).setView([14.6188, 121.0829], 16);
 let markers = [];
 let userMarker;
-let isDark = false;
 
-let baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
@@ -227,7 +255,6 @@ zoomSlider.value = map.getZoom();
 zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
 map.on('zoomend', () => zoomSlider.value = map.getZoom());
 
-// Add Geolocation control (Google Maps style)
 L.control.locate({
   position: 'bottomright',
   setView: true,
@@ -236,12 +263,8 @@ L.control.locate({
   drawCircle: true,
   showPopup: false,
   icon: 'fa fa-crosshairs',
-  strings: {
-    title: "Show my location"
-  },
-  locateOptions: {
-    enableHighAccuracy: true
-  }
+  strings: { title: "Show my location" },
+  locateOptions: { enableHighAccuracy: true }
 }).addTo(map);
 
 Papa.parse('points.csv?v=' + new Date().getTime(), {
@@ -336,26 +359,22 @@ function findNearby() {
         Distance: ${dist.toFixed(3)} km<br>
         <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
       `;
+
       const marker = L.circleMarker([point.lat, point.lng], {
         radius: 6,
         color: color,
         fillColor: color,
         fillOpacity: 0.85
       }).addTo(map).bindPopup(popupHtml);
+
       markers.push(marker);
     }
   });
 }
 
+// Theme toggle logic (UI only, not the map)
 document.getElementById("themeToggle").addEventListener("click", () => {
-  if (isDark) {
-    map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-  } else {
-    map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-  }
-  isDark = !isDark;
+  document.body.classList.toggle("dark-mode");
 });
 </script>
 </body>
