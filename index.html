@@ -136,21 +136,36 @@
       cursor: pointer;
     }
 
-    #themeToggle {
+    .control-group {
       position: absolute;
       bottom: 20px;
-      right: 60px;
-      background: rgba(255,255,255,0.8);
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 1000;
+    }
+
+    #themeToggle {
+      background: rgba(255,255,255,0.9);
       padding: 10px;
       border-radius: 8px;
-      z-index: 1000;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
     }
 
     .leaflet-control-locate {
-      position: absolute !important;
-      bottom: 20px !important;
-      right: 20px !important;
+      all: unset;
+      display: block;
+      background: rgba(255,255,255,0.9);
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 36px;
+      height: 36px;
+      text-align: center;
     }
 
     @media (max-width: 768px) {
@@ -196,7 +211,10 @@
     <div class="custom-zoom">
       <input type="range" id="zoomSlider" min="1" max="20" step="1" />
     </div>
-    <div id="themeToggle">🌓</div>
+    <div class="control-group">
+      <div id="themeToggle">🌓</div>
+      <div id="geoControl"></div>
+    </div>
   </div>
 </div>
 
@@ -219,7 +237,23 @@ zoomSlider.value = map.getZoom();
 zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
 map.on('zoomend', () => zoomSlider.value = map.getZoom());
 
-L.control.locate({ position: 'bottomright', flyTo: true }).addTo(map);
+const geoControl = L.control.locate({
+  setView: true,
+  flyTo: true,
+  keepCurrentZoomLevel: true,
+  drawCircle: true,
+  showPopup: false,
+  strings: {
+    title: "Show my location"
+  },
+  locateOptions: {
+    enableHighAccuracy: true
+  }
+});
+geoControl.addTo(map);
+
+const geoControlContainer = geoControl.getContainer();
+document.getElementById("geoControl").appendChild(geoControlContainer);
 
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
