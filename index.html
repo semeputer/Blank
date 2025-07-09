@@ -5,16 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nearby Coordinates Map</title>
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet & Icons -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
     html, body {
-      height: 100%;
       margin: 0;
+      height: 100%;
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
     }
 
     #app {
@@ -25,14 +24,12 @@
 
     #sidebar {
       width: 280px;
-      background-color: #fff;
+      background: #fff;
       border-right: 1px solid #ddd;
       padding: 20px;
       padding-top: 10px;
       box-sizing: border-box;
       transition: width 0.3s ease;
-      display: flex;
-      flex-direction: column;
       position: relative;
     }
 
@@ -59,10 +56,21 @@
       margin-top: 30px;
     }
 
+    .util-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .util-options.hidden {
+      display: none;
+    }
+
     .filter-group label {
       display: block;
-      margin-bottom: 6px;
       font-size: 14px;
+      margin-bottom: 6px;
     }
 
     #map {
@@ -71,6 +79,7 @@
       position: relative;
     }
 
+    /* Coordinate Input Top Left */
     #coordBox {
       position: absolute;
       top: 20px;
@@ -85,8 +94,7 @@
       gap: 10px;
     }
 
-    #coordBox select,
-    #coordBox input {
+    #coordBox select, #coordBox input {
       padding: 6px 8px;
       font-size: 14px;
       border: 1px solid #ccc;
@@ -101,33 +109,16 @@
       width: 160px;
     }
 
-    .util-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .util-toggle span {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .util-options.hidden {
-      display: none;
-    }
-
-    /* Custom zoom control */
+    /* Transparent Zoom Control - Bottom Left */
     .custom-zoom {
       position: absolute;
+      bottom: 20px;
       left: 20px;
-      top: 120px;
-      background: white;
       z-index: 1000;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(4px);
       padding: 10px;
       border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -145,7 +136,7 @@
     }
 
     .custom-zoom input[type=range] {
-      writing-mode: bt-lr; /* vertical slider */
+      writing-mode: bt-lr;
       -webkit-appearance: slider-vertical;
       width: 30px;
       height: 120px;
@@ -156,19 +147,6 @@
         position: absolute;
         z-index: 999;
         height: 100%;
-        background: #fff;
-      }
-
-      #coordBox {
-        top: 10px;
-        left: 10px;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-
-      .custom-zoom {
-        top: 150px;
-        left: 10px;
       }
     }
   </style>
@@ -181,7 +159,6 @@
     <button id="toggleBtn" title="Toggle Sidebar">
       <i class="fas fa-bars"></i>
     </button>
-
     <div class="sidebar-content">
       <div class="filter-group">
         <div class="util-toggle" onclick="toggleUtil()">
@@ -231,7 +208,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Sync zoom slider with map zoom
+// Zoom control sync
 const zoomSlider = document.getElementById('zoomSlider');
 zoomSlider.value = map.getZoom();
 zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
@@ -243,6 +220,7 @@ function adjustZoom(delta) {
   map.setZoom(newZoom);
 }
 
+// Load CSV
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
@@ -306,7 +284,9 @@ function findNearby() {
     fillOpacity: 1
   }).addTo(map).bindPopup("You are here");
   markers.push(userMarker);
-  map.setView([userLat, userLng], map.getZoom());
+
+  // Zoom into the location smoothly
+  map.setView([userLat, userLng], 18);
 
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
@@ -329,7 +309,6 @@ function findNearby() {
         fillColor: color,
         fillOpacity: 0.85
       }).addTo(map).bindPopup(popupHtml);
-
       markers.push(marker);
     }
   });
@@ -346,7 +325,6 @@ function toggleUtil() {
 document.getElementById("toggleBtn").addEventListener("click", () => {
   document.getElementById("sidebar").classList.toggle("collapsed");
 });
-
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
