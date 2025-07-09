@@ -1,3 +1,4 @@
+<!-- 🧭 REVISED map.html START -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,10 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nearby Coordinates Map</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"/>
 
   <style>
     html, body {
@@ -31,6 +31,7 @@
       box-sizing: border-box;
       transition: width 0.3s ease;
       position: relative;
+      color: #000;
     }
 
     #sidebar.collapsed {
@@ -50,6 +51,7 @@
       position: absolute;
       top: 15px;
       right: 15px;
+      color: #000;
     }
 
     .filter-group {
@@ -91,6 +93,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      color: #000;
     }
 
     #coordBox select, #coordBox input {
@@ -100,13 +103,8 @@
       border-radius: 5px;
     }
 
-    #coordBox select {
-      width: 120px;
-    }
-
-    #coordBox input {
-      width: 160px;
-    }
+    #coordBox select { width: 120px; }
+    #coordBox input { width: 160px; }
 
     .custom-zoom {
       position: absolute;
@@ -125,9 +123,7 @@
       opacity: 0.4;
     }
 
-    .custom-zoom:hover {
-      opacity: 1;
-    }
+    .custom-zoom:hover { opacity: 1; }
 
     .custom-zoom input[type=range] {
       writing-mode: bt-lr;
@@ -162,37 +158,19 @@
       z-index: 1001;
     }
 
-    .dark-mode #sidebar {
+    /* 🌙 Dark mode */
+    body.dark-mode #sidebar {
       background: #1e1e1e;
-      color: #f0f0f0;
-      border-right: 1px solid #444;
+      color: #fff;
     }
 
-    .dark-mode #coordBox {
-      background: #2a2a2a;
-      color: #f0f0f0;
-      box-shadow: 0 0 8px rgba(255,255,255,0.05);
-    }
-
-    .dark-mode #coordBox input,
-    .dark-mode #coordBox select {
+    body.dark-mode #coordBox {
       background: #333;
-      color: #f0f0f0;
-      border: 1px solid #555;
+      color: #fff;
     }
 
-    .dark-mode .filter-group label {
-      color: #ddd;
-    }
-
-    .dark-mode #themeToggle {
-      background: #333;
-      color: #f0f0f0;
-    }
-
-    /* ✅ Make the burger icon white in dark mode */
-    .dark-mode #toggleBtn i {
-    color: white;
+    body.dark-mode #toggleBtn {
+      color: #fff;
     }
 
     @media (max-width: 768px) {
@@ -200,7 +178,6 @@
         flex-direction: column;
         align-items: stretch;
       }
-
       #coordBox select, #coordBox input {
         width: 100%;
       }
@@ -208,15 +185,6 @@
   </style>
 </head>
 <body>
-
-<!-- 🔒 Access Control -->
-<script>
-  const user = sessionStorage.getItem('loggedInUser');
-  if (!user) {
-    window.location.href = 'login.html';
-  }
-</script>
-
 <div id="app">
   <div id="sidebar" class="collapsed">
     <button id="toggleBtn"><i class="fas fa-bars"></i></button>
@@ -251,153 +219,143 @@
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
 <script>
-window.onload = function () {
-  let csvData = [];
-  let map = L.map('map', { zoomControl: false }).setView([14.6188, 121.0829], 16);
-  let markers = [];
-  let userMarker;
+let csvData = [];
+let map = L.map('map', { zoomControl: false }).setView([14.6188, 121.0829], 16);
+let markers = [];
+let userMarker;
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-  const zoomSlider = document.getElementById('zoomSlider');
-  zoomSlider.value = map.getZoom();
-  zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
-  map.on('zoomend', () => zoomSlider.value = map.getZoom());
+const zoomSlider = document.getElementById('zoomSlider');
+zoomSlider.value = map.getZoom();
+zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
+map.on('zoomend', () => zoomSlider.value = map.getZoom());
 
-  L.control.locate({
-    position: 'bottomright',
-    setView: true,
-    flyTo: true,
-    keepCurrentZoomLevel: true,
-    drawCircle: true,
-    showPopup: false,
-    icon: 'fa fa-crosshairs',
-    strings: { title: "Show my location" },
-    locateOptions: { enableHighAccuracy: true }
-  }).addTo(map);
+L.control.locate({
+  position: 'bottomright',
+  setView: true,
+  flyTo: true,
+  keepCurrentZoomLevel: true,
+  drawCircle: true,
+  showPopup: false,
+  icon: 'fa fa-crosshairs',
+  strings: { title: "Show my location" },
+  locateOptions: { enableHighAccuracy: true }
+}).addTo(map);
 
-  Papa.parse('points.csv?v=' + new Date().getTime(), {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      csvData = results.data.map(row => ({
-        ...row,
-        lat: parseFloat(row.Latitude),
-        lng: parseFloat(row.Longitude),
-        utilization: parseFloat((row.Utilization || '').replace('%', ''))
-      }));
-      findNearby();
+Papa.parse('points.csv?v=' + new Date().getTime(), {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    csvData = results.data.map(row => ({
+      ...row,
+      lat: parseFloat(row.Latitude),
+      lng: parseFloat(row.Longitude),
+      utilization: parseFloat(row.Utilization)
+    }));
+    findNearby();
+  }
+});
+
+function toggleUtil() {
+  document.getElementById("utilOptions").classList.toggle("hidden");
+  document.getElementById("utilArrow").classList.toggle("fa-chevron-down");
+  document.getElementById("utilArrow").classList.toggle("fa-chevron-up");
+}
+
+document.getElementById("toggleBtn").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("collapsed");
+});
+
+document.querySelectorAll('.utilFilter').forEach(cb => {
+  cb.addEventListener('change', findNearby);
+});
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getUtilCategory(util) {
+  if (util <= 50) return 'low';
+  if (util <= 74) return 'mid';
+  return 'high';
+}
+
+function getColor(util) {
+  if (util <= 50) return 'green';
+  if (util <= 74) return 'yellow';
+  return 'red';
+}
+
+function findNearby() {
+  const input = document.getElementById("userCoord").value.trim();
+  const parts = input.split(",");
+  if (parts.length !== 2) return;
+
+  const userLat = parseFloat(parts[0]);
+  const userLng = parseFloat(parts[1]);
+  if (isNaN(userLat) || isNaN(userLng)) return;
+
+  const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
+
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  if (userMarker) map.removeLayer(userMarker);
+
+  userMarker = L.marker([userLat, userLng], { draggable: true }).addTo(map).bindPopup("You are here").openPopup();
+  userMarker.on("dragend", () => {
+    const { lat, lng } = userMarker.getLatLng();
+    document.getElementById("userCoord").value = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    findNearby();
+  });
+
+  map.setView([userLat, userLng], 18);
+
+  csvData.forEach(point => {
+    if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
+    const dist = haversine(userLat, userLng, point.lat, point.lng);
+    const category = getUtilCategory(point.utilization);
+    if (dist <= 0.5 && selected.includes(category)) {
+      const color = getColor(point.utilization);
+      const popupHtml = `
+        <strong>${point.Node || 'Unknown'}</strong><br>
+        City: ${point.City || '—'}<br>
+        Equipped: ${point.Equipped || '—'}<br>
+        Working: ${point.Working || '—'}<br>
+        Available: ${point.Available || '—'}<br>
+        Utilization: ${point.utilization.toFixed(0)}%<br>
+        ${dist.toFixed(3)} km<br>
+        <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
+      `;
+      const marker = L.circleMarker([point.lat, point.lng], {
+        radius: 6,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.85
+      }).addTo(map).bindPopup(popupHtml);
+      markers.push(marker);
     }
   });
+}
 
-  function toggleUtil() {
-    document.getElementById("utilOptions").classList.toggle("hidden");
-    document.getElementById("utilArrow").classList.toggle("fa-chevron-down");
-    document.getElementById("utilArrow").classList.toggle("fa-chevron-up");
-  }
-
-  document.getElementById("toggleBtn").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.toggle("collapsed");
-  });
-
-  document.querySelectorAll('.utilFilter').forEach(cb => {
-    cb.addEventListener('change', findNearby);
-  });
-
-  function haversine(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const toRad = x => x * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-              Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  function getUtilCategory(util) {
-    if (util <= 50) return 'low';
-    if (util <= 74) return 'mid';
-    return 'high';
-  }
-
-  function getColor(util) {
-    if (util <= 50) return 'green';
-    if (util <= 74) return 'yellow';
-    return 'red';
-  }
-
-  function findNearby() {
-    const input = document.getElementById("userCoord").value.trim();
-    const parts = input.split(",");
-    if (parts.length !== 2) return;
-
-    const userLat = parseFloat(parts[0]);
-    const userLng = parseFloat(parts[1]);
-    if (isNaN(userLat) || isNaN(userLng)) return;
-
-    const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
-
-    markers.forEach(m => map.removeLayer(m));
-    markers = [];
-    if (userMarker) map.removeLayer(userMarker);
-
-    userMarker = L.marker([userLat, userLng], { draggable: true }).addTo(map).bindPopup("You are here").openPopup();
-    userMarker.on("dragend", () => {
-      const { lat, lng } = userMarker.getLatLng();
-      document.getElementById("userCoord").value = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-      findNearby();
-    });
-
-    map.setView([userLat, userLng], 18);
-
-    csvData.forEach(point => {
-      if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
-      const dist = haversine(userLat, userLng, point.lat, point.lng);
-      const category = getUtilCategory(point.utilization);
-      if (dist <= 0.5 && selected.includes(category)) {
-        const color = getColor(point.utilization);
-        let popupHtml = `
-          <strong>${point.Node}</strong><br>
-          City: ${point.City || 'N/A'}<br>
-          Equipped: ${point.Equipped || 'N/A'}<br>
-          Working: ${point.Working || 'N/A'}<br>
-          Available: ${point.Available || 'N/A'}<br>
-          Utilization: ${parseFloat(point.utilization).toFixed(0)}%<br>
-          Distance: ${dist.toFixed(3)} km<br>
-          <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
-        `;
-
-        const marker = L.circleMarker([point.lat, point.lng], {
-          radius: 6,
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.85
-        }).addTo(map).bindPopup(popupHtml);
-
-        markers.push(marker);
-      }
-    });
-  }
-
-  document.getElementById("themeToggle").addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-  });
-
-  function logout() {
-    sessionStorage.removeItem('loggedInUser');
-    window.location.href = 'login.html';
-  }
-};
+document.getElementById("themeToggle").addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+});
 </script>
 </body>
 </html>
+<!-- 🧭 REVISED map.html END -->
