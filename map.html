@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nearby Coordinates Map</title>
+
+  <!-- Leaflet & Icons -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css"/>
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    #app {
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 280px;
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
+      box-sizing: border-box;
+      transition: width 0.3s ease;
+      position: relative;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
+      padding: 20px 10px;
+    }
+
+    #sidebar.collapsed .sidebar-content {
+      display: none;
+    }
+
+    #toggleBtn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+
+    .filter-group {
+      margin-top: 30px;
+    }
+
+    .util-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .util-options.hidden {
+      display: none;
+    }
+
+    .filter-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+      position: relative;
+    }
+
+    #coordBox {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #coordBox select, #coordBox input {
+      padding: 6px 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    #coordBox select {
+      width: 120px;
+    }
+
+    #coordBox input {
+      width: 160px;
+    }
+
+    .custom-zoom {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(4px);
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.3s ease;
+      opacity: 0.4;
+    }
+
+    .custom-zoom:hover {
+      opacity: 1;
+    }
+
+    .custom-zoom input[type=range] {
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      width: 30px;
+      height: 120px;
+      cursor: pointer;
+    }
+
+    .leaflet-control-locate {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 4px !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3) !important;
+      margin-top: 8px !important;
+    }
+
+    #themeToggle {
+      position: absolute;
+      bottom: 66px;
+      right: 16px;
+      background: #fff;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-size: 16px;
+      z-index: 1001;
+    }
+
+    .dark-mode #sidebar {
+      background: #1e1e1e;
+      color: #f0f0f0;
+      border-right: 1px solid #444;
+    }
+
+    .dark-mode #coordBox {
+      background: #2a2a2a;
+      color: #f0f0f0;
+      box-shadow: 0 0 8px rgba(255,255,255,0.05);
+    }
+
+    .dark-mode #coordBox input,
+    .dark-mode #coordBox select {
+      background: #333;
+      color: #f0f0f0;
+      border: 1px solid #555;
+    }
+
+    .dark-mode .filter-group label {
+      color: #ddd;
+    }
+
+    .dark-mode #themeToggle {
+      background: #333;
+      color: #f0f0f0;
+    }
+
+    #logoutBtn {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      z-index: 1002;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      #coordBox {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #coordBox select, #coordBox input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar" class="collapsed">
+    <button id="toggleBtn"><i class="fas fa-bars"></i></button>
+    <div class="sidebar-content">
+      <div class="filter-group">
+        <div class="util-toggle" onclick="toggleUtil()">
+          <span><i id="utilArrow" class="fas fa-chevron-down"></i> Utilization</span>
+        </div>
+        <div class="util-options" id="utilOptions">
+          <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label>
+          <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label>
+          <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="map">
+    <div id="coordBox">
+      <select id="coordType">
+        <option value="coordinates" selected>Coordinates</option>
+        <option value="facility">Facility</option>
+        <option value="city">City</option>
+        <option value="barangay">Barangay</option>
+      </select>
+      <input type="text" id="userCoord" placeholder="Lat,Lng" value="" oninput="findNearby()" />
+    </div>
+    <div class="custom-zoom">
+      <input type="range" id="zoomSlider" min="1" max="20" step="1" />
+    </div>
+    <div id="themeToggle">🌓</div>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  // 🔐 Redirect to login.html if not logged in
+  if (sessionStorage.getItem('loggedIn') !== 'true') {
+    window.location.href = 'login.html';
+  }
+
+  let csvData = [];
+  let map = L.map('map', { zoomControl: false }).setView([14.6188, 121.0829], 16);
+  let markers = [];
+  let userMarker;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const zoomSlider = document.getElementById('zoomSlider');
+  zoomSlider.value = map.getZoom();
+  zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
+  map.on('zoomend', () => zoomSlider.value = map.getZoom());
+
+  L.control.locate({
+    position: 'bottomright',
+    setView: true,
+    flyTo: true,
+    keepCurrentZoomLevel: true,
+    drawCircle: true,
+    showPopup: false,
+    icon: 'fa fa-crosshairs',
+    strings: { title: "Show my location" },
+    locateOptions: { enableHighAccuracy: true }
+  }).addTo(map);
+
+  Papa.parse('points.csv?v=' + new Date().getTime(), {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      csvData = results.data.map(row => ({
+        ...row,
+        lat: parseFloat(row.Latitude),
+        lng: parseFloat(row.Longitude),
+        utilization: parseFloat(row.Utilization.replace('%', ''))
+      }));
+      findNearby();
+    }
+  });
+
+  function toggleUtil() {
+    document.getElementById("utilOptions").classList.toggle("hidden");
+    document.getElementById("utilArrow").classList.toggle("fa-chevron-down");
+    document.getElementById("utilArrow").classList.toggle("fa-chevron-up");
+  }
+
+  document.getElementById("toggleBtn").addEventListener("click", () => {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+  });
+
+  document.querySelectorAll('.utilFilter').forEach(cb => {
+    cb.addEventListener('change', findNearby);
+  });
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const toRad = x => x * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function getUtilCategory(util) {
+    if (util <= 50) return 'low';
+    if (util <= 74) return 'mid';
+    return 'high';
+  }
+
+  function getColor(util) {
+    if (util <= 50) return 'green';
+    if (util <= 74) return 'yellow';
+    return 'red';
+  }
+
+  function findNearby() {
+    const input = document.getElementById("userCoord").value.trim();
+    const parts = input.split(",");
+    if (parts.length !== 2) return;
+
+    const userLat = parseFloat(parts[0]);
+    const userLng = parseFloat(parts[1]);
+    if (isNaN(userLat) || isNaN(userLng)) return;
+
+    const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
+
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    if (userMarker) map.removeLayer(userMarker);
+
+    userMarker = L.marker([userLat, userLng], { draggable: true }).addTo(map).bindPopup("You are here").openPopup();
+    userMarker.on("dragend", () => {
+      const { lat, lng } = userMarker.getLatLng();
+      document.getElementById("userCoord").value = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+      findNearby();
+    });
+
+    map.setView([userLat, userLng], 18);
+
+    csvData.forEach(point => {
+      if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
+      const dist = haversine(userLat, userLng, point.lat, point.lng);
+      const category = getUtilCategory(point.utilization);
+      if (dist <= 0.5 && selected.includes(category)) {
+        const color = getColor(point.utilization);
+        let popupHtml = `
+          <strong>${point.Node}</strong><br>
+          City: ${point.City || 'N/A'}<br>
+          Equipped: ${point.Equipped || 'N/A'}<br>
+          Working: ${point.Working || 'N/A'}<br>
+          Available: ${point.Available || 'N/A'}<br>
+          Utilization: ${parseFloat(point.utilization).toFixed(0)}%<br>
+          Distance: ${dist.toFixed(3)} km<br>
+          <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
+        `;
+
+        const marker = L.circleMarker([point.lat, point.lng], {
+          radius: 6,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.85
+        }).addTo(map).bindPopup(popupHtml);
+
+        markers.push(marker);
+      }
+    });
+  }
+
+  // Dark Mode toggle
+  document.getElementById("themeToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+  });
+
+  // Logout
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>
