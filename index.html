@@ -28,12 +28,12 @@
   </label>
 
   <span id="separateInputs">
-    <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188"></label>
-    <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829"></label>
+    <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188" onchange="findNearby()"></label>
+    <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829" onchange="findNearby()"></label>
   </span>
 
   <span id="combinedInput" style="display:none;">
-    <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829"></label>
+    <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829" oninput="findNearby()"></label>
   </span>
 
   <br><br>
@@ -41,8 +41,6 @@
   <label class="checkbox"><input type="checkbox" class="utilFilter" value="low" checked> 0%–50% (Green)</label>
   <label class="checkbox"><input type="checkbox" class="utilFilter" value="mid" checked> 51%–74% (Yellow)</label>
   <label class="checkbox"><input type="checkbox" class="utilFilter" value="high" checked> 75%–100% (Red)</label>
-  <br><br>
-  <button onclick="findNearby()">Find Nearby (500m)</button>
 </div>
 
 <div id="map"></div>
@@ -72,7 +70,7 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
       lng: parseFloat(row.Longitude),
       utilization: parseFloat(row.Utilization)
     }));
-    findNearby();
+    findNearby(); // Initial draw
   }
 });
 
@@ -80,6 +78,7 @@ function toggleCoordInput() {
   const mode = document.getElementById("coordMode").value;
   document.getElementById("separateInputs").style.display = mode === "separate" ? "inline" : "none";
   document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
+  findNearby(); // Auto-trigger on mode switch
 }
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -116,27 +115,20 @@ function findNearby() {
   } else {
     const coordText = document.getElementById("userCoord").value.trim();
     const parts = coordText.split(",");
-    if (parts.length !== 2) {
-      alert("Please enter coordinates in the format: lat,lng");
-      return;
-    }
+    if (parts.length !== 2) return;
     userLat = parseFloat(parts[0]);
     userLng = parseFloat(parts[1]);
   }
 
-  if (isNaN(userLat) || isNaN(userLng)) {
-    alert("Invalid coordinates.");
-    return;
-  }
+  if (isNaN(userLat) || isNaN(userLng)) return;
 
-  // Get selected utilization filters
   const selectedFilters = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
 
-  // Clear map
+  // Clear existing
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user marker
+  // User marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -146,7 +138,7 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Add filtered markers
+  // Points
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
 
@@ -156,25 +148,31 @@ function findNearby() {
     if (dist <= 0.5 && selectedFilters.includes(utilCategory)) {
       const color = getColorByUtilization(point.utilization);
 
-      // Dynamic details for popup
-      let details = `<strong>${point.Node || 'Unnamed'}</strong><br>`;
+      // Build popup excluding lat/lng
+      let popupHtml = `<strong>${point.Node || 'Unnamed'}</strong><br>`;
       for (const [key, value] of Object.entries(point)) {
-        if (key === 'lat' || key === 'lng') continue;
-        details += `${key}: ${value}<br>`;
+        if (['lat', 'lng', 'Latitude', 'Longitude'].includes(key)) continue;
+        popupHtml += `${key}: ${value}<br>`;
       }
-      details += `${dist.toFixed(3)} km<br>`;
-      details += `<a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>`;
+      popupHtml += `${dist.toFixed(3)} km<br>`;
+      popupHtml += `<a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>`;
 
       const marker = L.circleMarker([point.lat, point.lng], {
         radius: 6,
         color: color,
         fillColor: color,
         fillOpacity: 0.8
-      }).addTo(map).bindPopup(details);
+      }).addTo(map).bindPopup(popupHtml);
+
       markers.push(marker);
     }
   });
 }
+
+// Auto-update map when filters are changed
+document.querySelectorAll('.utilFilter').forEach(cb => {
+  cb.addEventListener('change', findNearby);
+});
 </script>
 
 </body>
