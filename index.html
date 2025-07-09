@@ -10,9 +10,10 @@
     body { font-family: Arial, sans-serif; padding: 10px; }
     input, select { margin-right: 5px; padding: 5px; }
     button { padding: 5px 10px; }
+    label.checkbox { margin-right: 10px; }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-</head>  
+</head>
 <body>
 
 <h2>Nearby Coordinate Finder (from CSV)</h2>
@@ -35,12 +36,18 @@
     <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829"></label>
   </span>
 
+  <br><br>
+  <strong>Filter by Utilization:</strong><br>
+  <label class="checkbox"><input type="checkbox" class="utilFilter" value="low" checked> 0%–50% (Green)</label>
+  <label class="checkbox"><input type="checkbox" class="utilFilter" value="mid" checked> 51%–74% (Yellow)</label>
+  <label class="checkbox"><input type="checkbox" class="utilFilter" value="high" checked> 75%–100% (Red)</label>
+  <br><br>
   <button onclick="findNearby()">Find Nearby (500m)</button>
 </div>
 
 <div id="map"></div>
 
-<!-- Leaflet and PapaParse scripts -->
+<!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -53,35 +60,28 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load CSV with extra fields
+// Load CSV
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
   skipEmptyLines: true,
   complete: function(results) {
-    console.log("Parsed CSV:", results.data);
     csvData = results.data.map(row => ({
-      node: row.Node,
-      city: row.City,
+      ...row,
       lat: parseFloat(row.Latitude),
       lng: parseFloat(row.Longitude),
-      equipped: row.Equipped,
-      working: row.Working,
-      available: row.Available,
-      utilization: row.Utilization
+      utilization: parseFloat(row.Utilization)
     }));
-    findNearby(); // Auto-run once loaded
+    findNearby();
   }
 });
 
-// Toggle input visibility
 function toggleCoordInput() {
   const mode = document.getElementById("coordMode").value;
   document.getElementById("separateInputs").style.display = mode === "separate" ? "inline" : "none";
   document.getElementById("combinedInput").style.display = mode === "combined" ? "inline" : "none";
 }
 
-// Haversine distance in km
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -92,6 +92,18 @@ function haversine(lat1, lon1, lat2, lon2) {
             Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+function getUtilizationCategory(util) {
+  if (util <= 50) return 'low';
+  if (util <= 74) return 'mid';
+  return 'high';
+}
+
+function getColorByUtilization(util) {
+  if (util <= 50) return 'green';
+  if (util <= 74) return 'yellow';
+  return 'red';
 }
 
 function findNearby() {
@@ -117,11 +129,14 @@ function findNearby() {
     return;
   }
 
-  // Clear previous markers
+  // Get selected utilization filters
+  const selectedFilters = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
+
+  // Clear map
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // User marker
+  // Add user marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -131,28 +146,31 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Nearby points
+  // Add filtered markers
   csvData.forEach(point => {
-    if (isNaN(point.lat) || isNaN(point.lng)) return;
+    if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
 
     const dist = haversine(userLat, userLng, point.lat, point.lng);
-    if (dist <= 0.5) {
-      const popupHtml = `
-        <strong>${point.node}</strong><br>
-        ${point.city}<br>
-        Equipped: ${point.equipped}<br>
-        Working: ${point.working}<br>
-        Available: ${point.available}<br>
-        Utilization: ${point.utilization}<br>
-        ${dist.toFixed(3)} km<br>
-        <a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>
-      `;
+    const utilCategory = getUtilizationCategory(point.utilization);
+
+    if (dist <= 0.5 && selectedFilters.includes(utilCategory)) {
+      const color = getColorByUtilization(point.utilization);
+
+      // Dynamic details for popup
+      let details = `<strong>${point.Node || 'Unnamed'}</strong><br>`;
+      for (const [key, value] of Object.entries(point)) {
+        if (key === 'lat' || key === 'lng') continue;
+        details += `${key}: ${value}<br>`;
+      }
+      details += `${dist.toFixed(3)} km<br>`;
+      details += `<a href="https://www.google.com/maps/dir/${userLat},${userLng}/${point.lat},${point.lng}" target="_blank">Get Directions</a>`;
+
       const marker = L.circleMarker([point.lat, point.lng], {
         radius: 6,
-        color: 'red',
-        fillColor: 'red',
+        color: color,
+        fillColor: color,
         fillOpacity: 0.8
-      }).addTo(map).bindPopup(popupHtml);
+      }).addTo(map).bindPopup(details);
       markers.push(marker);
     }
   });
