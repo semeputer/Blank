@@ -1,136 +1,156 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nearby Coordinates Map</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Icons (for modern look) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
   <style>
     html, body {
       height: 100%;
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
     }
 
-    #container {
+    #app {
       display: flex;
       height: 100%;
+      overflow: hidden;
     }
 
-    /* Sidebar */
+    /* Sidebar styles */
     #sidebar {
-      width: 260px;
-      background: #f9f9f9;
-      border-right: 1px solid #ccc;
-      padding: 15px;
+      width: 280px;
+      background-color: #ffffff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
       box-sizing: border-box;
-      overflow-y: auto;
+      transition: width 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar.collapsed {
+      width: 60px;
     }
 
     #sidebar h2 {
-      margin-top: 0;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    #toggleBtn {
+      background: none;
+      border: none;
       font-size: 18px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      align-self: flex-end;
     }
 
-    label.checkbox {
-      display: block;
-      margin-bottom: 8px;
+    .hidden-label {
+      display: none;
     }
 
-    /* Map */
-    #map-container {
+    #sidebar.collapsed .hidden-label {
+      display: inline-block;
+    }
+
+    #sidebar.collapsed .label-text {
+      display: none;
+    }
+
+    .filter-group {
+      margin-bottom: 15px;
+    }
+
+    .filter-group input {
+      margin-right: 6px;
+    }
+
+    #coordInput {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #coordInput input {
       flex: 1;
-      position: relative;
+      padding: 6px 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
 
     #map {
+      flex: 1;
       height: 100%;
-      width: 100%;
+      transition: margin-left 0.3s ease;
     }
 
-    /* Floating Coordinate Box */
-    #inputOverlay {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.15);
-      z-index: 1000;
+    .collapsed + #map {
+      margin-left: 60px;
     }
 
-    #inputOverlay label {
-      font-size: 14px;
-      display: block;
-      margin-top: 6px;
+    .coord-icon {
+      color: #666;
+      font-size: 16px;
     }
 
-    #inputOverlay select,
-    #inputOverlay input {
-      width: 100%;
-      margin-top: 4px;
-      padding: 4px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    /* Make small screens scrollable */
+    /* Responsive */
     @media (max-width: 768px) {
-      #container {
-        flex-direction: column;
-      }
       #sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #ccc;
+        position: absolute;
+        z-index: 1000;
+        height: 100%;
+        background: white;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
       }
-      #inputOverlay {
-        right: 5px;
-        left: 5px;
+      #map {
+        margin-left: 0 !important;
       }
     }
   </style>
 </head>
 <body>
 
-<div id="container">
+<div id="app">
   <!-- Sidebar -->
   <div id="sidebar">
-    <h2>Filter by Utilization</h2>
-    <label class="checkbox"><input type="checkbox" class="utilFilter" value="low" checked> 0%–50% (Green)</label>
-    <label class="checkbox"><input type="checkbox" class="utilFilter" value="mid" checked> 51%–74% (Yellow)</label>
-    <label class="checkbox"><input type="checkbox" class="utilFilter" value="high" checked> 75%–100% (Red)</label>
-  </div>
+    <button id="toggleBtn" title="Toggle Sidebar">
+      <i class="fas fa-bars"></i>
+    </button>
 
-  <!-- Map Container -->
-  <div id="map-container">
-    <div id="map"></div>
-
-    <!-- Floating Coordinate Input -->
-    <div id="inputOverlay">
-      <label>
-        Coordinate Input:
-        <select id="coordMode" onchange="toggleCoordInput()">
-          <option value="separate">Separate Lat & Lng</option>
-          <option value="combined">Single Coordinate (Lat,Lng)</option>
-        </select>
-      </label>
-
-      <div id="separateInputs">
-        <label>Latitude: <input type="number" id="userLat" step="any" value="14.6188" onchange="findNearby()"></label>
-        <label>Longitude: <input type="number" id="userLng" step="any" value="121.0829" onchange="findNearby()"></label>
-      </div>
-
-      <div id="combinedInput" style="display:none;">
-        <label>Coordinates (lat,lng): <input type="text" id="userCoord" value="14.6188,121.0829" oninput="findNearby()"></label>
+    <div class="filter-group">
+      <label class="label-text"><strong>Coordinates</strong></label>
+      <label class="hidden-label" title="Coordinates"><i class="fas fa-location-crosshairs coord-icon"></i></label>
+      <div id="coordInput">
+        <i class="fas fa-map-marker-alt coord-icon"></i>
+        <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
       </div>
     </div>
+
+    <div class="filter-group">
+      <label class="label-text"><strong>Utilization Filter</strong></label>
+      <label class="hidden-label" title="Filter"><i class="fas fa-sliders-h coord-icon"></i></label>
+      <label><input type="checkbox" class="utilFilter" value="low" checked> 0–50% (Green)</label><br>
+      <label><input type="checkbox" class="utilFilter" value="mid" checked> 51–74% (Yellow)</label><br>
+      <label><input type="checkbox" class="utilFilter" value="high" checked> 75–100% (Red)</label>
+    </div>
   </div>
+
+  <!-- Map -->
+  <div id="map"></div>
 </div>
 
-<!-- Scripts -->
+<!-- Leaflet + PapaParse -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -159,13 +179,7 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
   }
 });
 
-function toggleCoordInput() {
-  const mode = document.getElementById("coordMode").value;
-  document.getElementById("separateInputs").style.display = mode === "separate" ? "block" : "none";
-  document.getElementById("combinedInput").style.display = mode === "combined" ? "block" : "none";
-  findNearby();
-}
-
+// Util functions
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = x => x * Math.PI / 180;
@@ -178,42 +192,35 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-function getUtilizationCategory(util) {
+function getUtilCategory(util) {
   if (util <= 50) return 'low';
   if (util <= 74) return 'mid';
   return 'high';
 }
 
-function getColorByUtilization(util) {
+function getColor(util) {
   if (util <= 50) return 'green';
   if (util <= 74) return 'yellow';
   return 'red';
 }
 
 function findNearby() {
-  const mode = document.getElementById("coordMode").value;
-  let userLat, userLng;
+  const coordInput = document.getElementById("userCoord").value.trim();
+  const parts = coordInput.split(",");
+  if (parts.length !== 2) return;
 
-  if (mode === "separate") {
-    userLat = parseFloat(document.getElementById("userLat").value);
-    userLng = parseFloat(document.getElementById("userLng").value);
-  } else {
-    const coordText = document.getElementById("userCoord").value.trim();
-    const parts = coordText.split(",");
-    if (parts.length !== 2) return;
-    userLat = parseFloat(parts[0]);
-    userLng = parseFloat(parts[1]);
-  }
+  const userLat = parseFloat(parts[0]);
+  const userLng = parseFloat(parts[1]);
 
   if (isNaN(userLat) || isNaN(userLng)) return;
 
-  const selectedFilters = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
+  const selected = Array.from(document.querySelectorAll('.utilFilter:checked')).map(cb => cb.value);
 
-  // Clear existing markers
+  // Clear markers
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  // Add user marker
+  // User marker
   const userMarker = L.circleMarker([userLat, userLng], {
     radius: 6,
     color: 'blue',
@@ -223,18 +230,16 @@ function findNearby() {
   markers.push(userMarker);
   map.setView([userLat, userLng], 16);
 
-  // Add matching points
+  // Add nearby points
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
 
     const dist = haversine(userLat, userLng, point.lat, point.lng);
-    const utilCategory = getUtilizationCategory(point.utilization);
+    const category = getUtilCategory(point.utilization);
+    if (dist <= 0.5 && selected.includes(category)) {
+      const color = getColor(point.utilization);
 
-    if (dist <= 0.5 && selectedFilters.includes(utilCategory)) {
-      const color = getColorByUtilization(point.utilization);
-
-      // Build popup content excluding lat/lng
-      let popupHtml = `<strong>${point.Node || 'Unnamed'}</strong><br>`;
+      let popupHtml = `<strong>${point.Node}</strong><br>`;
       for (const [key, value] of Object.entries(point)) {
         if (['lat', 'lng', 'Latitude', 'Longitude'].includes(key)) continue;
         popupHtml += `${key}: ${value}<br>`;
@@ -246,18 +251,23 @@ function findNearby() {
         radius: 6,
         color: color,
         fillColor: color,
-        fillOpacity: 0.8
+        fillOpacity: 0.85
       }).addTo(map).bindPopup(popupHtml);
+
       markers.push(marker);
     }
   });
 }
 
-// Auto-update on filter change
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll('.utilFilter').forEach(cb => {
-    cb.addEventListener('change', findNearby);
-  });
+// Sidebar toggle
+document.getElementById("toggleBtn").addEventListener("click", () => {
+  const sidebar = document.getElementById("sidebar");
+  sidebar.classList.toggle("collapsed");
+});
+
+// Auto refresh on checkbox change
+document.querySelectorAll('.utilFilter').forEach(cb => {
+  cb.addEventListener('change', findNearby);
 });
 </script>
 
