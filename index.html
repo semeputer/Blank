@@ -26,7 +26,7 @@
       width: 280px;
       background: #fff;
       border-right: 1px solid #ddd;
-      padding: 20px 20px 20px 20px;
+      padding: 20px;
       box-sizing: border-box;
       transition: width 0.3s ease;
       position: relative;
@@ -78,14 +78,13 @@
       position: relative;
     }
 
-    /* Coordinate Input Top Left */
     #coordBox {
       position: absolute;
       top: 20px;
       left: 20px;
       z-index: 1000;
       background: white;
-      padding: 10px 12px;
+      padding: 10px;
       border-radius: 8px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
       display: flex;
@@ -108,7 +107,6 @@
       width: 160px;
     }
 
-    /* Transparent Zoom Control - Bottom Left */
     .custom-zoom {
       position: absolute;
       bottom: 20px;
@@ -122,8 +120,8 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      opacity: 0;
       transition: opacity 0.3s ease;
+      opacity: 0.4;
     }
 
     .custom-zoom:hover {
@@ -137,24 +135,12 @@
       height: 120px;
       cursor: pointer;
     }
-
-    @media (max-width: 768px) {
-      #sidebar {
-        position: absolute;
-        z-index: 999;
-        height: 100%;
-      }
-    }
   </style>
 </head>
 <body>
-
 <div id="app">
-  <!-- Sidebar -->
   <div id="sidebar">
-    <button id="toggleBtn" title="Toggle Sidebar">
-      <i class="fas fa-bars"></i>
-    </button>
+    <button id="toggleBtn"><i class="fas fa-bars"></i></button>
     <div class="sidebar-content">
       <div class="filter-group">
         <div class="util-toggle" onclick="toggleUtil()">
@@ -169,9 +155,7 @@
     </div>
   </div>
 
-  <!-- Map -->
   <div id="map">
-    <!-- Coordinate Input -->
     <div id="coordBox">
       <select id="coordType">
         <option value="coordinates" selected>Coordinates</option>
@@ -182,17 +166,14 @@
       <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
     </div>
 
-    <!-- Custom Zoom -->
     <div class="custom-zoom">
       <input type="range" id="zoomSlider" min="1" max="20" step="1" />
     </div>
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
 <script>
 let csvData = [];
 let map = L.map('map').setView([14.6188, 121.0829], 16);
@@ -202,7 +183,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Zoom sync
 const zoomSlider = document.getElementById('zoomSlider');
 zoomSlider.value = map.getZoom();
 zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
@@ -221,6 +201,22 @@ Papa.parse('points.csv?v=' + new Date().getTime(), {
     }));
     findNearby();
   }
+});
+
+function toggleUtil() {
+  const options = document.getElementById("utilOptions");
+  const arrow = document.getElementById("utilArrow");
+  options.classList.toggle("hidden");
+  arrow.classList.toggle("fa-chevron-down");
+  arrow.classList.toggle("fa-chevron-up");
+}
+
+document.getElementById("toggleBtn").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("collapsed");
+});
+
+document.querySelectorAll('.utilFilter').forEach(cb => {
+  cb.addEventListener('change', findNearby);
 });
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -248,10 +244,7 @@ function getColor(util) {
 }
 
 function findNearby() {
-  const type = document.getElementById("coordType").value;
   const input = document.getElementById("userCoord").value.trim();
-  if (type !== "coordinates") return;
-
   const parts = input.split(",");
   if (parts.length !== 2) return;
 
@@ -283,7 +276,7 @@ function findNearby() {
       const color = getColor(point.utilization);
       let popupHtml = `<strong>${point.Node}</strong><br>`;
       for (const [key, value] of Object.entries(point)) {
-        if (['lat', 'lng', 'Latitude', 'Longitude'].includes(key)) continue;
+        if (["lat", "lng", "Latitude", "Longitude"].includes(key)) continue;
         popupHtml += `${key}: ${value}<br>`;
       }
       popupHtml += `${dist.toFixed(3)} km<br>`;
@@ -299,23 +292,6 @@ function findNearby() {
     }
   });
 }
-
-function toggleUtil() {
-  const options = document.getElementById("utilOptions");
-  const arrow = document.getElementById("utilArrow");
-  options.classList.toggle("hidden");
-  arrow.classList.toggle("fa-chevron-down");
-  arrow.classList.toggle("fa-chevron-up");
-}
-
-document.getElementById("toggleBtn").addEventListener("click", () => {
-  document.getElementById("sidebar").classList.toggle("collapsed");
-});
-
-document.querySelectorAll('.utilFilter').forEach(cb => {
-  cb.addEventListener('change', findNearby);
-});
 </script>
-
 </body>
 </html>
