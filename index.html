@@ -7,7 +7,6 @@
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- FontAwesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
   <style>
@@ -24,12 +23,12 @@
       overflow: hidden;
     }
 
-    /* Sidebar */
     #sidebar {
       width: 280px;
       background-color: #fff;
       border-right: 1px solid #ddd;
       padding: 20px;
+      padding-top: 10px;
       box-sizing: border-box;
       transition: width 0.3s ease;
       display: flex;
@@ -57,7 +56,7 @@
     }
 
     .filter-group {
-      margin-top: 60px;
+      margin-top: 30px;
     }
 
     .filter-group label {
@@ -72,7 +71,6 @@
       position: relative;
     }
 
-    /* Coordinate Input Box */
     #coordBox {
       position: absolute;
       top: 20px;
@@ -103,11 +101,6 @@
       width: 160px;
     }
 
-    .coord-icon {
-      color: #555;
-    }
-
-    /* Modern arrow toggle */
     .util-toggle {
       display: flex;
       align-items: center;
@@ -125,10 +118,37 @@
       display: none;
     }
 
-    /* Space from leaflet controls */
-    .leaflet-control-zoom {
-      margin-top: 80px !important;
-      margin-left: 20px !important;
+    /* Custom zoom control */
+    .custom-zoom {
+      position: absolute;
+      left: 20px;
+      top: 120px;
+      background: white;
+      z-index: 1000;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .custom-zoom button {
+      font-size: 16px;
+      padding: 4px 10px;
+      cursor: pointer;
+      background: #eee;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 36px;
+    }
+
+    .custom-zoom input[type=range] {
+      writing-mode: bt-lr; /* vertical slider */
+      -webkit-appearance: slider-vertical;
+      width: 30px;
+      height: 120px;
     }
 
     @media (max-width: 768px) {
@@ -144,6 +164,11 @@
         left: 10px;
         flex-wrap: wrap;
         gap: 6px;
+      }
+
+      .custom-zoom {
+        top: 150px;
+        left: 10px;
       }
     }
   </style>
@@ -183,10 +208,17 @@
       </select>
       <input type="text" id="userCoord" placeholder="Lat,Lng" value="14.6188,121.0829" oninput="findNearby()" />
     </div>
+
+    <!-- Custom Zoom -->
+    <div class="custom-zoom">
+      <button onclick="adjustZoom(1)">+</button>
+      <input type="range" id="zoomSlider" min="1" max="20" step="1" />
+      <button onclick="adjustZoom(-1)">−</button>
+    </div>
   </div>
 </div>
 
-<!-- JS Scripts -->
+<!-- Scripts -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -199,7 +231,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Load CSV
+// Sync zoom slider with map zoom
+const zoomSlider = document.getElementById('zoomSlider');
+zoomSlider.value = map.getZoom();
+zoomSlider.addEventListener('input', () => map.setZoom(parseInt(zoomSlider.value)));
+map.on('zoomend', () => zoomSlider.value = map.getZoom());
+
+function adjustZoom(delta) {
+  let newZoom = map.getZoom() + delta;
+  newZoom = Math.min(20, Math.max(1, newZoom));
+  map.setZoom(newZoom);
+}
+
 Papa.parse('points.csv?v=' + new Date().getTime(), {
   download: true,
   header: true,
@@ -263,7 +306,7 @@ function findNearby() {
     fillOpacity: 1
   }).addTo(map).bindPopup("You are here");
   markers.push(userMarker);
-  map.setView([userLat, userLng], 16);
+  map.setView([userLat, userLng], map.getZoom());
 
   csvData.forEach(point => {
     if (isNaN(point.lat) || isNaN(point.lng) || isNaN(point.utilization)) return;
@@ -272,7 +315,6 @@ function findNearby() {
     const category = getUtilCategory(point.utilization);
     if (dist <= 0.5 && selected.includes(category)) {
       const color = getColor(point.utilization);
-
       let popupHtml = `<strong>${point.Node}</strong><br>`;
       for (const [key, value] of Object.entries(point)) {
         if (['lat', 'lng', 'Latitude', 'Longitude'].includes(key)) continue;
@@ -293,12 +335,6 @@ function findNearby() {
   });
 }
 
-// Sidebar toggle
-document.getElementById("toggleBtn").addEventListener("click", () => {
-  document.getElementById("sidebar").classList.toggle("collapsed");
-});
-
-// Util toggle
 function toggleUtil() {
   const options = document.getElementById("utilOptions");
   const arrow = document.getElementById("utilArrow");
@@ -307,7 +343,10 @@ function toggleUtil() {
   arrow.classList.toggle("fa-chevron-up");
 }
 
-// Recalculate on filter change
+document.getElementById("toggleBtn").addEventListener("click", () => {
+  document.getElementById("sidebar").classList.toggle("collapsed");
+});
+
 document.querySelectorAll('.utilFilter').forEach(cb => {
   cb.addEventListener('change', findNearby);
 });
